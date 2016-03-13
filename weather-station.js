@@ -25,17 +25,23 @@ app.get('/', function (req, res) {
     res.render('index', {title: pkg.name, version: pkg.version});
 });
 
+app.locals.sensorsState = {temp: 22, humid: 0.8, camera: 'image.jpg', gimbal: {heading: 272, pitch: -20}};
+
+app.get('/state', function (req, res) {
+    res.send(JSON.stringify(app.locals.sensorsState, null, "\t"));
+
+});
 
 var sockets = {};
 
 io.on('connection', function (socket) {
     sockets[socket.id] = socket;
-    //console.log("Total clients connected : ", Object.keys(sockets).length);
+    console.log("Total clients connected : ", Object.keys(sockets).length);
 
     socket.on('disconnect', function () {
         delete sockets[socket.id];
-        //console.log('socket.on disconnect');
-        //console.log("Total clients connected : ", Object.keys(sockets).length);
+        console.log('socket.on disconnect');
+        console.log("Total clients connected : ", Object.keys(sockets).length);
 
         stopStreaming();
 

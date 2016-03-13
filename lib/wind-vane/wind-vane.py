@@ -52,6 +52,8 @@ SPIMISO = 23
 SPIMOSI = 24
 SPICS = 25
 
+
+
 # set up the SPI interface pins
 GPIO.setup(SPIMOSI, GPIO.OUT)
 GPIO.setup(SPIMISO, GPIO.IN)
@@ -62,7 +64,7 @@ GPIO.setup(SPICS, GPIO.OUT)
 wind_vane_adc_pin = 0;
 
 last_read = 0       # this keeps track of the last potentiometer value
-tolerance = 3       # to keep from being jittery we'll only change
+tolerance = 0.5      # to keep from being jittery we'll only change
                     # volume when the pot has moved more than 5 'counts'
 
 while True:
@@ -70,7 +72,7 @@ while True:
         wind_vane_changed = False
 
         # read the analog pin
-        wind_direction = round(readadc(wind_vane_adc_pin, SPICLK, SPIMOSI, SPIMISO, SPICS) * 0.17578125)
+        wind_direction = round(readadc(wind_vane_adc_pin, SPICLK, SPIMOSI, SPIMISO, SPICS) * (0.17578125 * 2), 1)
         # how much has it changed since the last read?
         wind_change = abs(wind_direction - last_read)
 
@@ -84,12 +86,16 @@ while True:
         #         print "wind_vane_changed", wind_vane_changed
 
         if ( wind_vane_changed ):
-                if DEBUG:
-                        # print "set_volume", set_volume
-                        print "write file here: ", wind_direction
+            print wind_direction
+            with open("/ram/wind-vane.json","w+") as f:
+                f.seek(0)
+                f.write(str(wind_direction))
 
-                # save the potentiometer reading for the next loop
-                last_read = wind_direction
+            # if DEBUG:
+                # print "write file here: ", wind_direction
+
+            # save the potentiometer reading for the next loop
+            last_read = wind_direction
 
         # hang out and do nothing for a half second
         time.sleep(1)
