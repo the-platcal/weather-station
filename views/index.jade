@@ -10,24 +10,26 @@ html(lang="en")
         link(href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css", rel="stylesheet")
         style.
             body {
-                font-family: Verdana;
-                font-size: 13px;
+                /*font-family: Verdana;*/
+                /*font-size: 13px;*/
+                background-color: black;
+                color: #eee;
+            }
+
+            .panel-default > .panel-heading {
+                background-color: black;
+                color: #eee;
+            }
+
+            .panel {
                 background: black;
                 color: #eee;
             }
 
-            .streaming-image {
-                position: absolute;
-                top: 20px;
-                left: 0;
-                right: 0;
-                bottom: 0;
+            .btn {
+                background: black;
+                color: #eee;
             }
-
-            .landscape img {
-                height: 100%;
-            }
-
         // jQuery
         script(src="http://code.jquery.com/jquery.js")
         // Bootstrap JavaScript
@@ -35,17 +37,98 @@ html(lang="en")
         script(src="/socket.io/socket.io.js")
         script.
             var socket = io();
-            socket.on('liveStream', function (url) {
-                $('#stream').attr('src', url);
+
+            socket.on('camera-measurement', function (data) {
+                $('#camera').attr('src', data);
+            });
+            socket.on('wind-vane-measurement', function (data) {
+                $('#wind-direction').html(data);
+            });
+            socket.on('anemometer-measurement', function (data) {
+                $('#wind-speed').html(data);
+            });
+            socket.on('camera-gimbal-moved', function (data) {
+                $('#gimbal-compass').html(data.compass);
+                $('#gimbal-pitch').html(data.pitch);
+
+            });
+            socket.on('number-of-clients-changed', function (data) {
+                $('#number-of-clients').html(data);
+
+            });
+            socket.on('on-start-measurement-stream', function (state) {
+                $('#camera').attr('src', state.camera.image);
+                $('#wind-direction').html(state.wind.direction);
+                $('#wind-speed').html(state.wind.mph);
+                $('#gimbal-compass').html(state.camera.compass);
+                $('#gimbal-pitch').html(state.camera.pitch);
+                $('#number-of-clients').html(state.numberOfClients);
+
             });
 
-            function startStream() {
-                socket.emit('start-stream');
-            }
-            startStream();
+            socket.emit('start-measurement-stream');
 
-body
-    .container= title + " : " + version
-    .streaming-image.landscape
-        img#stream(src="")
+            var up = function () {
+                console.log('up')
+                $.get("/gimbal", {direction: 'up'});
+            }
+            var right = function () {
+                $.get("/gimbal", {direction: 'right'});
+            }
+            var down = function() {
+                $.get("/gimbal", {direction: 'down'});
+            }
+            var left = function () {
+                $.get("/gimbal", {direction: 'left'});
+            }
+
+
+
+bodyt
+    .container
+        img#camera.img-responsive(src="")
+        .panel.panel-default
+            //.panel-heading= title + " : " + version
+            //.panel-body
+            table.table
+                tr
+                    th sensor
+                    th measurement
+                    th unit
+                    th actions
+                tr
+                    td anemometer
+                    td
+                        #wind-speed
+                    td mph
+                    td
+                tr
+                    td vane
+                    td
+                        #wind-direction
+                    td degrees
+                    td
+                tr
+                    td camera-gimbal
+                    td
+                        #gimbal-compass
+                        #gimbal-pitch
+                    td degrees
+                    td
+                        .btn-group
+                            .btn.btn-default.btn-sm(onclick='up()')
+                                span.glyphicon.glyphicon-arrow-up
+                            .btn.btn-default.btn-sm(onclick='right()')
+                                span.glyphicon.glyphicon-arrow-right
+                            .btn.btn-default.btn-sm(onclick='down()')
+                                span.glyphicon.glyphicon-arrow-down
+                            .btn.btn-default.btn-sm(onclick='left()')
+                                span.glyphicon.glyphicon-arrow-left
+                tr
+                    td number of clients
+                    td
+                        #number-of-clients
+                    td int
+                    td
+
 

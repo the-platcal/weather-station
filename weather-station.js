@@ -7,54 +7,67 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var fs = require('fs');
-var path = require('path');
-var pkg = require('./package');
 
-app.use('/', express.static(pkg.ramDiskPath));
+var Notify = require('fs.notify');
+var exec = require('child_process').execSync;
+
+var path = require('path');
+var package = require('./package');
+
+app.use('/', express.static(package.ramDiskPath));
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
+app.locals.sockets = {};
+app.locals.dataFiles = [
+    package.gimbalDataFile,
+    package.windVaneDataFile,
+    package.anemometerDataFile
+];
+app.locals.fileNotifications = {};
 
-
-//app.get('/', function(req, res) {
-//    res.sendFile(__dirname + '/index.html');
-//    //console.log(path.join(__dirname, '/stream'));
-//});
 
 app.get('/', function (req, res) {
-    res.render('index', {title: pkg.name, version: pkg.version});
+    res.render('index', {title: package.name, version: package.version});
 });
 
-app.locals.sensorsState = {temp: 22, humid: 0.8, camera: 'image.jpg', gimbal: {heading: 272, pitch: -20}};
-
-app.get('/state', function (req, res) {
-    res.send(JSON.stringify(app.locals.sensorsState, null, "\t"));
-
+app.get('/gimbal', function (req, res) {
+    switch (req.query.direction) {
+        case 'up':
+            break;
+        case 'down':
+            break;
+        case 'right':
+            break;
+        case 'left':
+            break;
+    }
 });
-
-var sockets = {};
 
 io.on('connection', function (socket) {
-    sockets[socket.id] = socket;
-    console.log("Total clients connected : ", Object.keys(sockets).length);
+    app.locals.sockets[socket.id] = socket;
+
+    var numbeOfClients = Object.keys(app.locals.sockets).length;
+    console.log("Total clients connected : ", numbeOfClients);
+
+    io.sockets.emit('number-of-clients-changed', numbeOfClients);
 
     socket.on('disconnect', function () {
-        delete sockets[socket.id];
-        console.log('socket.on disconnect');
-        console.log("Total clients connected : ", Object.keys(sockets).length);
 
-        stopStreaming();
+        delete app.locals.sockets[socket.id];
 
-        // no more sockets, kill the stream
-        if (Object.keys(sockets).length == 0) {
-            app.set('isStreaming', false);
-            //if (proc) proc.kill();
-            fs.unwatchFile(pkg.ramDiskPath + '/image_stream.jpg');
-        }
+        io.sockets.emit('number-of-clients-changed', numbeOfClients);
+
+        if (numbeOfClients == 0)
+            if (app.locals.listeningToSensors)
+                _removeSensorListeners();
     });
 
-    socket.on('start-stream', function () {
-        startStreaming(io);
+    socket.on('start-measurement-stream', function (e) {
+
+        socket.emit('on-start-measurement-stream', _getSensorState());
+        _addSensorListeners();
+
     });
 
 });
@@ -63,29 +76,136 @@ http.listen(3000, function () {
     console.log('listening on *:3000');
 });
 
-function stopStreaming() {
-    if (Object.keys(sockets).length == 0) {
-        app.set('isStreaming', false);
-        //if (proc) proc.kill();
-        fs.unwatchFile(pkg.ramDiskPath + '/image_stream.jpg');
-    }
-}
 
-function startStreaming(io) {
+function _addSensorListeners() {
 
-    if (app.get('isStreaming')) {
-        io.sockets.emit('liveStream', './image_stream.jpg?_t=' + (Math.random() * 100000));
+    if (app.locals.listeningToSensors)
         return;
-    }
 
-    app.set('isStreaming', true);
+    app.locals.fileNotifications = new Notify(app.locals.dataFiles);
+    app.locals.fileNotifications.on('change', function (file, event, path) {
 
-    fs.watchFile(pkg.ramDiskPath + '/image_stream.jpg', function (current, previous) {
-        //console.log('watch hit:' + current + " : " + previous);
-        io.sockets.emit('liveStream', './image_stream.jpg?_t=' + (Math.random() * 100000));
+        //if (path == package.cameraDataFile)
+        //io.sockets.emit('camera-measurement', _getSensorState());
+
+        if (path == package.windVaneDataFile)
+            io.sockets.emit('wind-vane-measurement', _getDataJson(path));
+
+        if (path == package.anemometerDataFile)
+            io.sockets.emit('anemometer-measurement', _getDataJson(path));
+
+        if (path == package.gimbalDataFile)
+            io.sockets.emit('camera-gimbal-moved', _getDataJson(path));
     });
+
+    app.locals.listeningToSensors = true;
+
 }
 
+function _removeSensorListeners() {
+
+    if (!app.locals.listeningToSensors)
+        return;
+
+    app.locals.fileNotifications.close();
+    app.locals.listeningToSensors = false;
+}
+
+
+function _getDataJson(file) {
+    value = {}
+    try {
+        value = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (e){
+        console.log(e.message)
+    }
+    return value}
+
+
+
+function _getSensorState() {
+
+    var windMPH = _getDataJson(package.anemometerDataFile);
+    var windDirection = _getDataJson(package.windVaneDataFile);
+    var gimbal = _getDataJson(package.gimbalDataFile)
+
+    var image = './camera.jpg?_t=' + (Math.random() * 100000);
+
+    var state = {
+        temp: -1,
+        humid: -1,
+        wind: {mph: windMPH, direction: windDirection},
+        camera: {image: image, compass: gimbal.compass, pitch: gimbal.pitch, fovVertical: 53.50, fovHorizontal: 41.41}
+    };
+
+    return state;
+}
+
+//
+//var files = [
+//    //package.cameraDataFile,
+//    package.gimbalDataFile
+//];
+
+/*
+ var notifications = new Notify(files);
+ notifications.on('change', function (file, event, path) {
+ console.log('caught a ' + event + ' event on ' + path);
+ console.log(file);
+ if (event == 'change') {
+ fs.readFile(package.gimbalDataFile, 'utf8', function (err, data) {
+
+ if (err) throw err;
+
+ gimbal = JSON.parse(data);
+
+ exec('python /home/pi/weather-station/lib/gimbal/ServoGimbal.py 0 ' + String(gimbal.compass), function (error, stdout, stderr) {
+ // command output is in stdout
+ });
+ exec('python /home/pi/weather-station/lib/gimbal/ServoGimbal.py 1 ' + String(gimbal.pitch), function (error, stdout, stderr) {
+ // command output is in stdout
+ });
+ // take the pulse load off the other pins
+ exec('python /home/pi/weather-station/lib/gimbal/ServoGimbal.py 3 375', function (error, stdout, stderr) {
+ // command output is in stdout
+ });
+
+ });
+
+ }
+ });
+
+ // write default package.gimbalDataFile
+ fs.writeFile(package.gimbalDataFile, '{"compass": 375, "pitch": 375}', function (err) {
+ if (err) return console.log(err);
+ console.log('Hello World > package.gimbalDataFile');
+ });
+ */
+
+//
+//
+//function stopStreaming() {
+//    if (Object.keys(sockets).length == 0) {
+//        app.set('isStreaming', false);
+//        //if (proc) proc.kill();
+//        fs.unwatchFile(package.ramDiskPath + '/image_stream.jpg');
+//    }
+//}
+//
+//function startStreaming(io) {
+//
+//    if (app.get('isStreaming')) {
+//        io.sockets.emit('camera-measurement', app.locals.//'./image_stream.jpg?_t=' + (Math.random() * 100000));
+//    }
+//
+//    app.set('isStreaming', true);
+//
+//    fs.watchFile(package.ramDiskPath + '/image_stream.jpg', function (current, previous) {
+//        //console.log('watch hit:' + current + " : " + previous);
+//        //io.sockets.emit('liveStream', './image_stream.jpg?_t=' + (Math.random() * 100000));
+//    });
+//}
+//
 
 ///**
 // * Created by aaron on 11/28/15.
@@ -123,7 +243,7 @@ function startStreaming(io) {
 //
 //
 //app.get('/', function (req, res) {
-//    res.render('index', {title: require('./pkg.json').name, port: app.get('port')});
+//    res.render('index', {title: require('./package.json').name, port: app.get('port')});
 //});
 //
 //app.get('/logging/start', function (req, res) {

@@ -1,6 +1,6 @@
 {
   "name": "weather-station",
-  "version": "0.0.3",
+  "version": "0.0.6",
   "description": "Y'know... Like a weather station.",
   "main": "weather-station.js",
   "scripts": {
@@ -22,8 +22,13 @@
     "rpi-gpio": "0.7.0",
     "ds18b20": "0.1.0",
     "socket.io": "1.4.4",
-    "adc-pi-spi": "0.0.1"
+    "fs.notify": "0.0.4",
+    "adafruit-i2c-pwm-driver": "0.0.2"
   },
   "homepage": "https://github.com/the-platcal/weather-station#readme",
-  "ramDiskPath": "/ram"
+  "ramDiskPath": "/ram",
+  "cameraDataFile": "/ram/camera.jpg",
+  "anemometerDataFile": "/ram/anemometer.json",
+  "gimbalDataFile": "/ram/gimbal.json",
+  "windVaneDataFile": "/ram/wind-vane.json"
 }
