@@ -70,7 +70,7 @@ tolerance = 0.5      # to keep from being jittery we'll only change
 while True:
         # we'll assume that the pot didn't move
         wind_vane_changed = False
-
+        #print(readadc(wind_vane_adc_pin, SPICLK, SPIMOSI, SPIMISO, SPICS))
         # read the analog pin
         wind_direction = round(readadc(wind_vane_adc_pin, SPICLK, SPIMOSI, SPIMISO, SPICS) * (0.17578125 * 2), 1)
         # how much has it changed since the last read?
@@ -79,6 +79,8 @@ while True:
         # if DEBUG:
         #         print "wind_direction:", wind_direction
 
+	#print "yo:", wind_direction
+
         if ( wind_change > tolerance ):
                wind_vane_changed = True
 
@@ -86,7 +88,7 @@ while True:
         #         print "wind_vane_changed", wind_vane_changed
 
         if ( wind_vane_changed ):
-            print wind_direction
+            #print wind_direction
             with open("/ram/wind-vane.json","w+") as f:
                 f.seek(0)
                 f.write(str(wind_direction))
@@ -98,4 +100,4 @@ while True:
             last_read = wind_direction
 
         # hang out and do nothing for a half second
-        time.sleep(1)
+        time.sleep(0.25)

@@ -20,6 +20,7 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.locals.sockets = {};
 app.locals.dataFiles = [
+    package.cameraDataFile,
     package.gimbalDataFile,
     package.windVaneDataFile,
     package.anemometerDataFile
@@ -85,8 +86,10 @@ function _addSensorListeners() {
     app.locals.fileNotifications = new Notify(app.locals.dataFiles);
     app.locals.fileNotifications.on('change', function (file, event, path) {
 
-        //if (path == package.cameraDataFile)
-        //io.sockets.emit('camera-measurement', _getSensorState());
+        if (path == package.cameraDataFile)
+            io.sockets.emit('camera-measurement', './camera.jpg?_t=' + (Math.random() * 100000));//_getSensorState());
+
+        console.log(path);
 
         if (path == package.windVaneDataFile)
             io.sockets.emit('wind-vane-measurement', _getDataJson(path));
@@ -113,11 +116,12 @@ function _removeSensorListeners() {
 
 
 function _getDataJson(file) {
+
     value = {}
     try {
         value = JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch (e){
-        console.log(e.message)
+        console.log('_getDataJson error: ' + e.message)
     }
     return value}
 
@@ -135,7 +139,7 @@ function _getSensorState() {
         temp: -1,
         humid: -1,
         wind: {mph: windMPH, direction: windDirection},
-        camera: {image: image, compass: gimbal.compass, pitch: gimbal.pitch, fovVertical: 53.50, fovHorizontal: 41.41}
+        //camera: {image: image, compass: gimbal.compass, pitch: gimbal.pitch, fovVertical: 53.50, fovHorizontal: 41.41}
     };
 
     return state;

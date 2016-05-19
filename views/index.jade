@@ -57,11 +57,11 @@ html(lang="en")
 
             });
             socket.on('on-start-measurement-stream', function (state) {
-                $('#camera').attr('src', state.camera.image);
+                //$('#camera').attr('src', state.camera.image);
                 $('#wind-direction').html(state.wind.direction);
                 $('#wind-speed').html(state.wind.mph);
-                $('#gimbal-compass').html(state.camera.compass);
-                $('#gimbal-pitch').html(state.camera.pitch);
+                //$('#gimbal-compass').html(state.camera.compass);
+                //$('#gimbal-pitch').html(state.camera.pitch);
                 $('#number-of-clients').html(state.numberOfClients);
 
             });
