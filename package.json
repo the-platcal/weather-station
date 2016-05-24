@@ -30,5 +30,6 @@
   "cameraDataFile": "/ram/camera.jpg",
   "anemometerDataFile": "/ram/anemometer.json",
   "gimbalDataFile": "/ram/gimbal.json",
-  "windVaneDataFile": "/ram/wind-vane.json"
+  "windVaneDataFile": "/ram/wind-vane.json",
+  "am2302DataFile": "/ram/am2302.json"
 }

@@ -41,6 +41,10 @@ html(lang="en")
             socket.on('camera-measurement', function (data) {
                 $('#camera').attr('src', data);
             });
+            socket.on('am2302-measurement', function (data) {
+                //console.log(data);
+                $('#temp-humidity').html(Math.floor(data[0])+ '/' +Math.floor(data[0] * (9/5)+ 32) + '&deg;,  ' + Math.floor(data[1]) + '%');
+            });
             socket.on('wind-vane-measurement', function (data) {
                 $('#wind-direction').html(data);
             });
@@ -54,10 +58,9 @@ html(lang="en")
             });
             socket.on('number-of-clients-changed', function (data) {
                 $('#number-of-clients').html(data);
-
+	
             });
             socket.on('on-start-measurement-stream', function (state) {
-                //$('#camera').attr('src', state.camera.image);
                 $('#wind-direction').html(state.wind.direction);
                 $('#wind-speed').html(state.wind.mph);
                 //$('#gimbal-compass').html(state.camera.compass);
@@ -96,6 +99,12 @@ bodyt
                     th measurement
                     th unit
                     th actions
+                tr
+                    td am2302
+                    td
+                        #temp-humidity
+                    td celsius/fahrenheit, percent
+                    td
                 tr
                     td anemometer
                     td

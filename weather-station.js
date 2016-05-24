@@ -23,7 +23,8 @@ app.locals.dataFiles = [
     package.cameraDataFile,
     package.gimbalDataFile,
     package.windVaneDataFile,
-    package.anemometerDataFile
+    package.anemometerDataFile,
+    package.am2302DataFile
 ];
 app.locals.fileNotifications = {};
 
@@ -89,7 +90,12 @@ function _addSensorListeners() {
         if (path == package.cameraDataFile)
             io.sockets.emit('camera-measurement', './camera.jpg?_t=' + (Math.random() * 100000));//_getSensorState());
 
-        console.log(path);
+        //console.log(path);
+
+        if (path == package.am2302DataFile){
+            io.sockets.emit('am2302-measurement', _getDataJson(path));
+            console.log(_getDataJson(path));
+	}
 
         if (path == package.windVaneDataFile)
             io.sockets.emit('wind-vane-measurement', _getDataJson(path));
